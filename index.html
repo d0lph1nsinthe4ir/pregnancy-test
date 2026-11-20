@@ -23,7 +23,7 @@ const app=document.getElementById('app');const weeks=Array.from({length:43},(_,i
 {id:'pelvic',title:'Is turning over in bed an athletic event?',answers:['Not at all','A little awkward','A full-body operation','Not sure'],likelihood:[null,[19,26,37,43],[28,34,42,43],null]},
 {id:'contractions',title:'Are you having contractions?',answers:['No','Occasional irregular tightening','Regular painful contractions getting closer','I feel a powerful urge to bear down','Not sure'],likelihood:[null,[22,29,42,43],[36,39,42,43],[38,40,42,43],null]},
 {id:'test',title:'Have you had a positive pregnancy test?',answers:['Yes','I tested negative','I have not taken one','Not sure'],likelihood:[null,null,null,null]},
-{id:'identity',title:'Which best describes you?',answers:['I am pregnant','I might be pregnant',"I can\u0027t get pregnant",'Goo goo gaga','Prefer not to say'],likelihood:[null,null,null,null,null]},
+{id:'identity',title:'Which best describes you?',answers:['I am pregnant','I might be pregnant',"Pregnancy isn\u0027t possible or expected for me",'Goo goo gaga','Prefer not to say'],likelihood:[null,null,null,null,null]},
 {id:'perspective',title:'Which sounds most like your situation?',answers:['I am noticing changes in my own body','I am mostly here out of curiosity','I am experiencing everything from a very confined space','I would rather not say'],likelihood:[null,null,null,null]},
 {id:'context',title:'One more thing: what is your point of view?',answers:['I have a uterus','I do not have a uterus','I have never seen daylight','I would rather not say'],likelihood:[null,null,null,null]},
 {id:'sexknown',title:'Do you know the baby’s sex?',answers:['Yes, from a blood test','Yes, from an ultrasound','Yes, another way','No / not sure'],likelihood:[null,null,null,null]},
@@ -127,22 +127,46 @@ if(method==='permanent'){special('You are using permanent contraception.','A mor
 special('You are on birth control.','A reasonable precaution. Not quite a force field.')
 })
 }
-function cannotPregnantFollowup(){
+function anatomyFollowup(){
 cancelTransition();
-shell('<div class="tag">ONE QUICK FOLLOW-UP</div><div class="progress"><div style="width:10%"></div></div><h2>What best describes your situation?</h2><div class="answer-list"><button class="answer" data-reason="man">I have a penis</button><button class="answer" data-reason="menopause">I have gone through menopause</button><button class="answer" data-reason="contraception">I am using birth control</button><button class="answer" data-reason="fertility">Pregnancy has not been possible for me</button><button class="answer" data-reason="trying">I have been hoping for a positive test</button><button class="answer" data-reason="private">Something else / I would rather not say</button></div><p class="small">You do not have to share personal details to play.</p><div class="row"><button class="button secondary" id="back">← Back</button></div>');
-app.querySelector('#back').onclick=back;
-app.querySelectorAll('[data-reason]').forEach(button=>button.onclick=()=>{
-let reason=button.dataset.reason;
+shell('<div class="tag">ONE MORE QUESTION</div><h2>What best describes your situation?</h2><div class="answer-list"><button class="answer" data-anatomy="man">I have a penis</button><button class="answer" data-anatomy="fertility">Pregnancy has not been possible for me</button><button class="answer" data-anatomy="trying">I have been hoping for a positive test</button><button class="answer" data-anatomy="private">Something else / prefer not to say</button></div><div class="row"><button class="button secondary" id="back">← Back</button></div>');
+app.querySelector('#back').onclick=cannotPregnantFollowup;
+app.querySelectorAll('[data-anatomy]').forEach(button=>button.onclick=()=>{
+const reason=button.dataset.anatomy;
 if(reason==='man')special('Our guess: You are a man.','A bold guess based on anatomy, not a certainty about your identity.');
-else if(reason==='menopause')special('You are postmenopausal.','Gestimate has reached the end of the reproductive timeline.');
-else if(reason==='contraception')birthControlFollowup();
 else if(reason==='fertility')special('No gestimate available.','Fertility experiences can be complicated. This silly symptom game cannot tell you anything about yours.');
 else if(reason==='trying')special('You might be trying to conceive.','No predictions or promises from this algorithm. Wishing you well, whatever your circumstances.');
 else{identityPrivate=true;uncertaintyStreak++;nextQuestion()}
 })
 }
+function sexualActivityFollowup(){
+cancelTransition();
+shell('<div class="tag">ONE MORE QUESTION</div><h2>Which best describes your situation?</h2><div class="answer-list"><button class="answer" data-activity="inactive">I am not sexually active</button><button class="answer" data-activity="nosperm">My sexual activity does not involve sperm</button><button class="answer" data-activity="private">Something else / prefer not to say</button></div><div class="row"><button class="button secondary" id="back">← Back</button></div>');
+app.querySelector('#back').onclick=cannotPregnantFollowup;
+app.querySelectorAll('[data-activity]').forEach(button=>button.onclick=()=>{
+const reason=button.dataset.activity;
+if(reason==='inactive')special('You are abstinent.','An effective way to avoid an unexpected plot development.');
+else if(reason==='nosperm')special('There is no sperm in this equation.','Gestimate has checked the math.');
+else{identityPrivate=true;uncertaintyStreak++;nextQuestion()}
+})
+}
+function cannotPregnantFollowup(){
+cancelTransition();
+shell('<div class="tag">ONE QUICK FOLLOW-UP</div><div class="progress"><div style="width:10%"></div></div><h2>What makes you say pregnancy is not possible or expected?</h2><div class="answer-list"><button class="answer" data-reason="anatomy">Anatomy or medical reasons</button><button class="answer" data-reason="menopause">Menopause</button><button class="answer" data-reason="activity">My sexual activity</button><button class="answer" data-reason="contraception">Birth control</button><button class="answer" data-reason="private">Something else / prefer not to say</button></div><p class="small">You do not have to share personal details to play.</p><div class="row"><button class="button secondary" id="back">← Back</button></div>');
+app.querySelector('#back').onclick=back;
+app.querySelectorAll('[data-reason]').forEach(button=>button.onclick=()=>{
+const reason=button.dataset.reason;
+if(reason==='anatomy')anatomyFollowup();
+else if(reason==='menopause')special('You are postmenopausal.','Gestimate has reached the end of the reproductive timeline.');
+else if(reason==='activity')sexualActivityFollowup();
+else if(reason==='contraception')birthControlFollowup();
+else{identityPrivate=true;uncertaintyStreak++;nextQuestion()}
+})
+}
 function easterIcon(title){
 const frame=(body)=>'<div class="easter-art" aria-hidden="true"><svg viewBox="0 0 160 120" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round">'+body+'</svg></div>';
+if(title.includes('abstinent'))return frame('<path d="M80 16l37 15v26q0 29-37 48-37-19-37-48V31Z"/><path d="M60 60l14 14 28-31"/>');
+if(title.includes('sperm in this equation'))return frame('<circle cx="80" cy="60" r="40"/><path d="M51 89l58-58"/><path d="M63 47q-9-8-15 0-5 8 4 14 8 5 15-4m0 0q18 6 21 23"/><path d="M95 67q7-8 14-4"/>');
 if(title.includes('postmenopausal'))return frame('<path d="M40 24h80v78H40zM40 43h80M55 14v20m50-20v20M59 60h12m17 0h12M59 78h12m17 0h12"/><path d="M22 102h116"/>');
 if(title.includes('birth control')||title.includes('contraception'))return frame('<rect x="43" y="19" width="74" height="85" rx="9"/><circle cx="62" cy="41" r="7"/><circle cx="88" cy="41" r="7"/><circle cx="62" cy="63" r="7"/><circle cx="88" cy="63" r="7"/><path d="M57 87h46"/>');
 if(title.includes('Schrödinger'))return frame('<path d="M24 62h112v44H24zM24 62l17-22h78l17 22M41 40l13 22m65-22-13 22"/><path d="M62 62V39l-11-14-6 21M98 62V39l11-14 6 21M62 42q18-16 36 0"/><circle cx="69" cy="51" r="2.5" fill="currentColor" stroke="none"/><circle cx="91" cy="51" r="2.5" fill="currentColor" stroke="none"/><path d="M77 59l3 3 3-3M80 62v4m0 0-6 3m6-3 6 3M35 83h90M49 91h62"/>');
