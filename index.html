@@ -5,7 +5,7 @@
  .easter-result{position:relative;overflow:hidden}.easter-art{width:160px;max-width:55%;margin:0 0 20px;color:#fff6e8}.easter-art svg{display:block;width:100%;height:auto}.easter-result h2{position:relative}.easter-result p{position:relative}</style></head><body><header><div class="brand">gestimate<span style="color:var(--red)">.</span></div><div class="tag">AN EXPERIMENT IN GUESSWORK</div></header><main><div id="app" aria-live="polite"></div></main><footer>For entertainment, not medical dating. Symptoms vary widely; ultrasound and clinical dating are more reliable. No answers are transmitted or saved.</footer><script>
 const app=document.getElementById('app');const weeks=Array.from({length:43},(_,i)=>i);let posterior=[],history=[],asked=[],step=0,rejectedWeeks=new Set(),lastGuessStep=-99,guessCount=0,identityPrivate=false,sideClue=null,uncertaintyStreak=0;const q=[
 {id:'movement',title:'Have you felt the baby move?',answers:['Not yet','Little flutters','Distinct kicks','Strong rolls and stretches','Not sure'],likelihood:[[0,16,24,27],[14,19,22,27],[18,24,31,38],[25,31,40,43],null]},
-{id:'bump',title:'What is your bump situation?',answers:['No visible change','A little rounder','Obviously pregnant','Very large and in the way','Not sure'],likelihood:[[0,8,14,20],[9,15,22,29],[16,23,34,42],[27,33,42,43],null]},
+{id:'bump',title:'What is your bump situation?',answers:['No visible change','It comes and goes—might just be bloating','A little rounder most of the time','Obviously pregnant','Very large and in the way','Not sure'],likelihood:[[0,8,14,20],null,[4,12,21,32],[16,23,34,42],[27,33,42,43],null]},
 {id:'nausea',title:'How is the nausea?',answers:['None at all','Pretty intense right now','It was bad, but it has eased','It comes and goes','Not sure'],likelihood:[null,[5,7,11,17],[11,15,24,35],[6,12,28,42],null]},
 {id:'energy',title:'How is your energy?',answers:['Unusually exhausted','Starting to feel human again','Pretty normal','Tired again, but for different reasons','Not sure'],likelihood:[[5,8,13,40],[11,15,23,29],null,[27,32,42,43],null]},
 {id:'reflux',title:'Has heartburn become part of your personality?',answers:['No','Occasionally','Frequently','Constantly','Not sure'],likelihood:[null,[13,21,33,42],[20,27,39,43],[27,33,42,43],null]},
@@ -41,6 +41,8 @@ if(qi===23){if(ai===0)return w<=3?1:w===4?.55:w===5?.15:.025;if(ai===1)return w<
 if(qi===24){if(ai===0)return w<=5?1:w<=13?.7:w<=22?.4:.18;if(ai===1)return w<=4?.8:w<=9?1:w<=14?.5:.2;if(ai===2)return w<=4?.2:w<=13?1:w<=20?.65:.35;if(ai===3)return w<5?.04:w<10?.2:1;return 1}
 if((qi===0&&ai===0)||(qi===14&&ai===0))return w<=15?1:w<=20?.85:w<=24?.4:.08;
 if(qi===1&&ai===0)return w<=9?1:w<=14?.85:w<=20?.45:.1;
+if(qi===1&&ai===1)return w<=3?.45:w<=12?1:w<=17?.7:w<=24?.4:.25;
+if(qi===1&&ai===2)return w<=5?.65:w<=14?1:w<=23?.85:.65;
 if(qi===2&&ai===0)return 1;
 if(qi===7&&ai===3)return w<=5?1:w<=13?.8:.7;
 if(qi===3&&ai===2)return w<=5?1:.9;
