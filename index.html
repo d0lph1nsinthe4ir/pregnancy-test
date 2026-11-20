@@ -28,12 +28,14 @@ const app=document.getElementById('app');const weeks=Array.from({length:43},(_,i
 {id:'context',title:'One more thing: what is your point of view?',answers:['I have a uterus','I do not have a uterus','I have never seen daylight','I would rather not say'],likelihood:[null,null,null,null]},
 {id:'sexknown',title:'Do you know the baby’s sex?',answers:['Yes, from a blood test','Yes, from an ultrasound','Yes, another way','No / not sure'],likelihood:[null,null,null,null]},
 {id:'period',title:'What is happening with your period?',answers:['Not due yet','Just due or a few days late','A few weeks late','It has been months','Not sure / cycles are irregular'],likelihood:[null,null,null,null,null]},
-{id:'onset',title:'When did you first notice pregnancy-like symptoms?',answers:['I have not noticed any','Only in the last few days','Within the last couple of weeks','Quite a while ago','Not sure'],likelihood:[null,null,null,null,null]}
+{id:'onset',title:'When did you first notice pregnancy-like symptoms?',answers:['I have not noticed any','Only in the last few days','Within the last couple of weeks','Quite a while ago','Not sure'],likelihood:[null,null,null,null,null]},
+{id:'testtiming',title:'When did you take that negative test?',answers:['Before my period was due','Around the day my period was due','After my period was late','I am not sure'],likelihood:[null,null,null,null]}
 ];
 function likelihood(w,r){if(!r)return 1;let [a,b,c,d]=r; if(w<a)return .07;if(w<b)return .07+.93*(w-a)/Math.max(1,b-a);if(w<=c)return 1;if(w<d)return 1-.93*(w-c)/Math.max(1,d-c);return .07}
 function entropy(p){return -p.reduce((s,x)=>s+(x>0?x*Math.log(x):0),0)}function normalized(a){let z=a.reduce((s,x)=>s+x,0);return a.map(x=>x/z)}function clueWeight(qi,ai,w){
 if(w<3)return 0;
 if(qi===18){if(ai===0)return w===3?.08:w===4?.55:1;if(ai===1)return w<=4?1:w<=6?.65:.3;return 1}
+if(qi===25){if(ai===0)return w<=4?1:w<=6?.55:.15;if(ai===1)return w<=5?1:w<=7?.65:.2;if(ai===2)return w<=5?.8:w<=8?1:.4;return 1}
 if(qi===22){if(ai===0)return w<9?.03:w<11?.4:1;if(ai===1)return w<13?.02:w<17?.35:1;return 1}
 if(qi===23){if(ai===0)return w<=3?1:w===4?.55:w===5?.15:.025;if(ai===1)return w<=5?1:w<=7?.5:w<=10?.15:.04;if(ai===2)return w<5?.1:w<=9?1:w<=13?.5:.15;if(ai===3)return w<9?.02:w<14?.12:w<20?.45:1;return 1}
 if(qi===24){if(ai===0)return w<=5?1:w<=13?.7:w<=22?.4:.18;if(ai===1)return w<=4?.8:w<=9?1:w<=14?.5:.2;if(ai===2)return w<=4?.2:w<=13?1:w<=20?.65:.35;if(ai===3)return w<5?.04:w<10?.2:1;return 1}
@@ -44,7 +46,42 @@ if(qi===7&&ai===3)return w<=5?1:w<=13?.8:.7;
 if(qi===3&&ai===2)return w<=5?1:.9;
 return 1
 }
-function predict(qi,ai){let r=q[qi].likelihood[ai];return normalized(posterior.map((p,w)=>rejectedWeeks.has(w)?0:p*likelihood(w,r)*clueWeight(qi,ai,w)))}function pick(){let remaining=q.map((x,i)=>i).filter(i=>!asked.includes(i)&&i!==18&&i!==19&&i!==20&&i!==21);if(identityPrivate&&step===5&&!asked.includes(20))return 20;if(identityPrivate&&step===6&&!asked.includes(21))return 21;if(step===0)return 19;if(step===1)return 18;if(step===2)return 0;if(step===3)return 1;if(step===4)return 2;if(step===7&&!asked.includes(23))return 23;if(step===8&&!asked.includes(24))return 24;if(step===9&&!asked.includes(22))return 22;if(step===17&&!asked.includes(17))return 17;let current=entropy(posterior);return remaining.map(i=>{let outcomes=q[i].answers.map((_,a)=>predict(i,a));let probs=q[i].answers.map((_,a)=>posterior.reduce((s,p,w)=>s+p*likelihood(w,q[i].likelihood[a]),0));let total=probs.reduce((a,b)=>a+b,0);let gain=current-probs.reduce((s,p,a)=>s+p/total*entropy(outcomes[a]),0);return {i,gain}}).sort((a,b)=>b.gain-a.gain)[0]?.i??remaining[0]}
+function predict(qi,ai){let r=q[qi].likelihood[ai];return normalized(posterior.map((p,w)=>rejectedWeeks.has(w)?0:p*likelihood(w,r)*clueWeight(qi,ai,w)))}function pick(){
+let remaining=q.map((x,i)=>i).filter(i=>!asked.includes(i)&&i!==18&&i!==19&&i!==20&&i!==21);
+if(step===0)return 19;
+if(step===1)return 18;
+if(identityPrivate&&step===5&&!asked.includes(20))return 20;
+if(identityPrivate&&step===6&&!asked.includes(21))return 21;
+const testAnswer=history.find(h=>h.qi===18)?.ai;
+const earlyRoute=testAnswer===1||testAnswer===2;
+if(earlyRoute){
+  if(testAnswer===1&&!asked.includes(25))return 25;
+  if(!asked.includes(23))return 23;
+  if(!asked.includes(24))return 24;
+  if(!asked.includes(7))return 7;
+  if(!asked.includes(3))return 3;
+  if(!asked.includes(2))return 2;
+}
+if(!earlyRoute&&step===2)return 0;
+if(!earlyRoute&&step===3)return 1;
+if(!earlyRoute&&step===4)return 2;
+if(!asked.includes(23)&&step>=6)return 23;
+if(!asked.includes(24)&&step>=7)return 24;
+if(!asked.includes(22)&&step>=8)return 22;
+let earlyMass=posterior.slice(3,15).reduce((a,b)=>a+b,0);
+const advanced=new Set([0,1,5,9,10,13,14,16,17]);
+let eligible=remaining.filter(i=>!earlyRoute||earlyMass<.35||!advanced.has(i));
+if(!eligible.length)eligible=remaining;
+if(!eligible.length)return undefined;
+let current=entropy(posterior);
+return eligible.map(i=>{
+let outcomes=q[i].answers.map((_,a)=>predict(i,a));
+let probs=q[i].answers.map((_,a)=>posterior.reduce((sum,p,w)=>sum+p*likelihood(w,q[i].likelihood[a])*clueWeight(i,a,w),0));
+let total=probs.reduce((a,b)=>a+b,0);
+let gain=current-probs.reduce((sum,p,a)=>sum+(total?p/total:0)*entropy(outcomes[a]),0);
+return {i,gain}
+}).sort((a,b)=>b.gain-a.gain)[0].i
+}
 let transitionTimer=null,transitionToken=0;const thinkingLines=['Recalculating our suspicions…','Interesting. That changes things.','Consulting the extremely scientific algorithm…','Narrowing down the possibilities…','Our confidence is becoming unreasonable.','Choosing a more revealing question…'];function cancelTransition(){transitionToken++;if(transitionTimer!==null){clearTimeout(transitionTimer);transitionTimer=null}app.classList.remove('transition-out','transition-in')}function shell(body){app.innerHTML=body;app.classList.remove('transition-out','transition-in');void app.offsetWidth;app.classList.add('transition-in')}function nextQuestion(){cancelTransition();if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){render();return}let token=transitionToken;app.classList.add('transition-out');transitionTimer=setTimeout(()=>{if(token!==transitionToken)return;const pause=step>=3&&(step===4||step===8||step===12||step===16);if(pause){const line=thinkingLines[Math.floor(step/4-1)%thinkingLines.length];shell('<section class="thinking-panel" role="status"><div class="tag">GESTIMATE IS THINKING</div><h2>'+line+'</h2><div class="thinking-dots" aria-hidden="true"><span></span><span></span><span></span></div><p class="small">Selecting the next question based on your answers.</p></section>');transitionTimer=setTimeout(()=>{if(token===transitionToken)render()},1050)}else render()},230)}function start(){cancelTransition();posterior=normalized(weeks.map(w=>w<3?0:w>41?.3:1));history=[];asked=[];step=0;rejectedWeeks=new Set();lastGuessStep=-99;guessCount=0;identityPrivate=false;sideClue=null;uncertaintyStreak=0;render()}
 function render(){let qi=pick();if(qi===undefined||step>=20){finish();return}let x=q[qi];shell('<div class="tag">QUESTION '+(step+1)+' / 20</div><div class="progress"><div style="width:'+((step+1)/20*100)+'%"></div></div><h2>'+x.title+'</h2><div class="answer-list">'+x.answers.map((a,i)=>'<button class="answer" data-answer="'+i+'">'+a+'</button>').join('')+'</div><p class="small">Choose the closest answer. The questions adapt as we go.</p><div class="row"><button class="button secondary" id="back" '+(!history.length?'disabled':'')+'>← Back</button><button class="button secondary" id="skip">Skip</button></div>');app.querySelectorAll('[data-answer]').forEach(b=>b.onclick=()=>respond(qi,+b.dataset.answer));app.querySelector('#skip').onclick=()=>respond(qi,x.answers.length-1);app.querySelector('#back').onclick=back}
 function respond(qi,ai){history.push({qi,ai,prior:[...posterior],identityPrivate,sideClue,uncertaintyStreak});asked.push(qi);step++;let answer=q[qi].answers[ai];uncertaintyStreak=/^(Not sure|Prefer not to say|I would rather not say)$/i.test(answer)?uncertaintyStreak+1:0;if(uncertaintyStreak>=8){ambiguityResult();return}if(qi===19)identityPrivate=ai===4;if(qi===20)sideClue=ai;if(qi===21&&ai===1){special('Our guess: You are a man.','A guess based on anatomy, not a certainty about your identity.');return}if(qi===21&&ai===2&&sideClue===2){special('You are the baby.','This is a remarkable level of reading comprehension for someone not yet born.');return}if(qi===19&&ai===2){cannotPregnantFollowup();return}if(qi===19&&ai===3){special('You are the baby.','This is a remarkable level of reading comprehension for someone not yet born.');return}if(qi===17&&ai===3){special('You are literally giving birth.','Our calculations suggest this questionnaire may no longer be your highest priority.');return}posterior=predict(qi,ai);if(step>=20){offerGuess(true);return}if(shouldGuess()){offerGuess(false);return}nextQuestion()}
